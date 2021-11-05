@@ -1,5 +1,7 @@
 # Adaptive Lighting component for Home Assistant
 
+This is a fork that adds a new option to adjust light color independently from adjusting brightness.
+
 ![](https://github.com/home-assistant/brands/raw/b4a168b9af282ef916e120d31091ecd5e3c35e66/core_integrations/adaptive_lighting/icon.png)
 
 _Try out this code by adding https://github.com/basnijholt/adaptive-lighting to your custom repos in [HACS (Home Assistant Community Store)](https://hacs.xyz/) and install it!_
@@ -73,25 +75,26 @@ Full example:
 ```yaml
 # Example configuration.yaml entry
 adaptive_lighting:
-- name: "default"
-  lights: []
-  prefer_rgb_color: false
-  transition: 45
-  initial_transition: 1
-  interval: 90
-  min_brightness: 1
-  max_brightness: 100
-  min_color_temp: 2000
-  max_color_temp: 5500
-  sleep_brightness: 1
-  sleep_color_temp: 1000
-  sunrise_time: "08:00:00"  # override the sunrise time
-  sunrise_offset:
-  sunset_time:
-  sunset_offset: 1800  # in seconds or '00:15:00'
-  take_over_control: true
-  detect_non_ha_changes: false
-  only_once: false
+  - name: "Office Lights"
+    lights:
+      - light.office_lights
+    prefer_rgb_color: false
+    transition: 45
+    initial_transition: 1
+    interval: 90
+    min_brightness: 1
+    max_brightness: 100
+    min_color_temp: 1800
+    max_color_temp: 5500
+    sleep_brightness: 1
+    sleep_color_temp: 1000
+    sunrise_offset: 3600 # Delay brightness by an hour
+    sunrise_offset_color: 0 # Match color to sun color
+    sunset_offset: -3600 # Dim brights early by an hour
+    sunset_offset_color: 0 # Keep color matched to sun color
+    take_over_control: false
+    detect_non_ha_changes: false
+    only_once: false
 
 ```
 

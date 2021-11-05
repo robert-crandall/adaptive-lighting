@@ -113,8 +113,10 @@ from .const import (
     CONF_SLEEP_BRIGHTNESS,
     CONF_SLEEP_COLOR_TEMP,
     CONF_SUNRISE_OFFSET,
+    CONF_SUNRISE_OFFSET_COLOR,
     CONF_SUNRISE_TIME,
     CONF_SUNSET_OFFSET,
+    CONF_SUNSET_OFFSET_COLOR,
     CONF_SUNSET_TIME,
     CONF_TAKE_OVER_CONTROL,
     CONF_TRANSITION,
@@ -584,8 +586,10 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             sleep_brightness=data[CONF_SLEEP_BRIGHTNESS],
             sleep_color_temp=data[CONF_SLEEP_COLOR_TEMP],
             sunrise_offset=data[CONF_SUNRISE_OFFSET],
+            sunrise_offset_color=data[CONF_SUNRISE_OFFSET_COLOR],
             sunrise_time=data[CONF_SUNRISE_TIME],
             sunset_offset=data[CONF_SUNSET_OFFSET],
+            sunset_offset_color=data[CONF_SUNSET_OFFSET_COLOR],
             sunset_time=data[CONF_SUNSET_TIME],
             time_zone=self.hass.config.time_zone,
             transition=data[CONF_TRANSITION],
@@ -1048,13 +1052,15 @@ class SunLightSettings:
     sleep_brightness: int
     sleep_color_temp: int
     sunrise_offset: Optional[datetime.timedelta]
+    sunrise_offset_color: Optional[datetime.timedelta]
     sunrise_time: Optional[datetime.time]
     sunset_offset: Optional[datetime.timedelta]
+    sunset_offset_color: Optional[datetime.timedelta]
     sunset_time: Optional[datetime.time]
     time_zone: datetime.tzinfo
     transition: int
 
-    def get_sun_events(self, date: datetime.datetime) -> Dict[str, float]:
+    def get_sun_events(self, date: datetime.datetime, color: bool) -> Dict[str, float]:
         """Get the four sun event's timestamps at 'date'."""
 
         def _replace_time(date: datetime.datetime, key: str) -> datetime.datetime:
@@ -1078,6 +1084,18 @@ class SunLightSettings:
             if self.sunset_time is None
             else _replace_time(date, "sunset")
         ) + self.sunset_offset
+
+        if color:
+            sunrise = (
+                location.sunrise(date, local=False)
+                if self.sunrise_time is None
+                else _replace_time(date, "sunrise")
+            ) + self.sunrise_offset_color
+            sunset = (
+                location.sunset(date, local=False)
+                if self.sunset_time is None
+                else _replace_time(date, "sunset")
+            ) + self.sunset_offset_color
 
         if self.sunrise_time is None and self.sunset_time is None:
             try:
@@ -1113,23 +1131,23 @@ class SunLightSettings:
 
         return events
 
-    def relevant_events(self, now: datetime.datetime) -> List[Tuple[str, float]]:
+    def relevant_events(self, now: datetime.datetime, color: bool) -> List[Tuple[str, float]]:
         """Get the previous and next sun event."""
         events = [
-            self.get_sun_events(now + timedelta(days=days)) for days in [-1, 0, 1]
+            self.get_sun_events(now + timedelta(days=days), color) for days in [-1, 0, 1]
         ]
         events = sum(events, [])  # flatten lists
         events = sorted(events, key=lambda x: x[1])
         i_now = bisect.bisect([ts for _, ts in events], now.timestamp())
         return events[i_now - 1 : i_now + 1]
 
-    def calc_percent(self, transition: int) -> float:
+    def calc_percent(self, transition: int, color: bool) -> float:
         """Calculate the position of the sun in %."""
         now = dt_util.utcnow()
 
         target_time = now + timedelta(seconds=transition)
         target_ts = target_time.timestamp()
-        today = self.relevant_events(target_time)
+        today = self.relevant_events(target_time, color)
         (_, prev_ts), (next_event, next_ts) = today
         h, x = (  # pylint: disable=invalid-name
             (prev_ts, next_ts)
@@ -1166,9 +1184,18 @@ class SunLightSettings:
 
         Calculating all values takes <0.5ms.
         """
-        percent = self.calc_percent(transition) if transition is not None else self.calc_percent(0)
+        percent = self.calc_percent(transition, False) if transition is not None else self.calc_percent(0, False)
+        percent_color = self.calc_percent(transition, True) if transition is not None else self.calc_percent(0, True)
+        # _LOGGER.debug(
+        #     "Percent: %s",
+        #     percent,
+        # )
+        # _LOGGER.debug(
+        #     "Percent Color: %s",
+        #     percent_color,
+        # )
         brightness_pct = self.calc_brightness_pct(percent, is_sleep)
-        color_temp_kelvin = self.calc_color_temp_kelvin(percent, is_sleep)
+        color_temp_kelvin = self.calc_color_temp_kelvin(percent_color, is_sleep)
         color_temp_mired: float = color_temperature_kelvin_to_mired(color_temp_kelvin)
         rgb_color: Tuple[float, float, float] = color_temperature_to_rgb(
             color_temp_kelvin
