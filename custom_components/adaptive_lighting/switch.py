@@ -1093,13 +1093,13 @@ class SunLightSettings:
         ) + self.sunset_offset
 
         if color:
-            if sunrise_offset_color is not None:
+            if self.sunrise_offset_color is not None:
                 sunrise = (
                     location.sunrise(date, local=False)
                     if self.sunrise_time is None
                     else _replace_time(date, "sunrise")
                 ) + self.sunrise_offset_color
-            if sunset_offset_color is not None:
+            if self.sunset_offset_color is not None:
                 sunset = (
                     location.sunset(date, local=False)
                     if self.sunset_time is None
