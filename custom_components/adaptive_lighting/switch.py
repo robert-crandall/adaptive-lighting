@@ -824,6 +824,13 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             )
         ):
             return
+        if light in self.turn_on_off_listener.last_service_data:
+            if self.turn_on_off_listener.last_service_data[light] == service_data:
+                _LOGGER.debug(
+                    "_adapt_light: %s - no change detected, returning without calling light.turn_on",
+                    light
+                )
+                return
         self.turn_on_off_listener.last_service_data[light] = service_data
 
         async def turn_on(service_data):
@@ -1086,16 +1093,18 @@ class SunLightSettings:
         ) + self.sunset_offset
 
         if color:
-            sunrise = (
-                location.sunrise(date, local=False)
-                if self.sunrise_time is None
-                else _replace_time(date, "sunrise")
-            ) + self.sunrise_offset_color
-            sunset = (
-                location.sunset(date, local=False)
-                if self.sunset_time is None
-                else _replace_time(date, "sunset")
-            ) + self.sunset_offset_color
+            if self.sunrise_offset_color is not None:
+                sunrise = (
+                    location.sunrise(date, local=False)
+                    if self.sunrise_time is None
+                    else _replace_time(date, "sunrise")
+                ) + self.sunrise_offset_color
+            if self.sunset_offset_color is not None:
+                sunset = (
+                    location.sunset(date, local=False)
+                    if self.sunset_time is None
+                    else _replace_time(date, "sunset")
+                ) + self.sunset_offset_color
 
         if self.sunrise_time is None and self.sunset_time is None:
             try:
@@ -1395,6 +1404,9 @@ class TurnOnOffListener:
         or switch is turned 'off' and 'on' again.
         """
         if light not in self.last_state_change:
+            ## Lights were not consistently registered via state_changed_event_listener.
+            ## Adding last_state_change key with last state fixed this problem
+            self.last_state_change[light] = [self.hass.states.get(light)]
             return False
         old_states: List[State] = self.last_state_change[light]
         await self.hass.helpers.entity_component.async_update_entity(light)

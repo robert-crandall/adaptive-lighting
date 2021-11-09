@@ -1,0 +1,9 @@
+- Lights On to low brightness (simulates turning bulbs on via App)
+  - Reset HA
+    - Lights should go to normal brightness (feature: Adaptive Lighting takes over control on first run)
+  - Wait 2x cycle time
+  - Manually adjust lights to low brightness
+  - Wait 2x cycle time
+    - Lights should stay on low brightness (feature: Adaptive Lighting gives control to App)
+  - Turn lights off, wait cycle time, turn back on
+    - Lights should adjust to high brightness (feature: Adaptive Lighting takes back control when lights on -> off -> on)
