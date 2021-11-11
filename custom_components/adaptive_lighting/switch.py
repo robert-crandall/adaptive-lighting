@@ -1081,30 +1081,25 @@ class SunLightSettings:
 
         location = self.astral_location
 
-        sunrise = (
-            location.sunrise(date, local=False)
-            if self.sunrise_time is None
-            else _replace_time(date, "sunrise")
-        ) + self.sunrise_offset
-        sunset = (
-            location.sunset(date, local=False)
-            if self.sunset_time is None
-            else _replace_time(date, "sunset")
-        ) + self.sunset_offset
+        sunrise_offset = self.sunrise_offset
+        sunset_offset = self.sunset_offset
 
         if color:
             if self.sunrise_offset_color is not None:
+                sunrise_offset = self.sunrise_offset_color
+            if self.sunset_offset_color is not None:
+                sunset_offset = self.sunset_offset_color
+
                 sunrise = (
                     location.sunrise(date, local=False)
                     if self.sunrise_time is None
                     else _replace_time(date, "sunrise")
-                ) + self.sunrise_offset_color
-            if self.sunset_offset_color is not None:
+        ) + sunrise_offset
                 sunset = (
                     location.sunset(date, local=False)
                     if self.sunset_time is None
                     else _replace_time(date, "sunset")
-                ) + self.sunset_offset_color
+        ) + sunset_offset
 
         if self.sunrise_time is None and self.sunset_time is None:
             try:
