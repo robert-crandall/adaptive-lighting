@@ -4,8 +4,17 @@ This is a fork that adds a new option to adjust light color independently from a
 
 ![](https://github.com/home-assistant/brands/raw/b4a168b9af282ef916e120d31091ecd5e3c35e66/core_integrations/adaptive_lighting/icon.png)
 
-_Try out this code by adding https://github.com/basnijholt/adaptive-lighting to your custom repos in [HACS (Home Assistant Community Store)](https://hacs.xyz/) and install it!_
+_Try out this code by adding https://github.com/robert-crandall/adaptive-lighting to your custom repos in [HACS (Home Assistant Community Store)](https://hacs.xyz/) and install it!_
 
+## Developing
+
+In order to make the local environment able to connect to Github, can do the following:
+
+```
+git --work-tree=/home/robert/.homelab/home-assistant/custom_components \
+    --git-dir=/home/robert/.homelab/home-assistant/git_dir \
+    clone https://github.com/robert-crandall/adaptive-lighting.git
+```
 
 The `adaptive_lighting` platform changes the settings of your lights throughout the day.
 It uses the position of the sun to calculate the color temperature and brightness that is most fitting for that time of the day.

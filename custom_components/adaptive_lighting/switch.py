@@ -118,6 +118,7 @@ from .const import (
     CONF_SUNSET_OFFSET,
     CONF_SUNSET_OFFSET_COLOR,
     CONF_SUNSET_TIME,
+    CONF_HALFWAY_TIMES,
     CONF_TAKE_OVER_CONTROL,
     CONF_TRANSITION,
     CONF_TURN_ON_LIGHTS,
@@ -591,6 +592,7 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             sunset_offset=data[CONF_SUNSET_OFFSET],
             sunset_offset_color=data[CONF_SUNSET_OFFSET_COLOR],
             sunset_time=data[CONF_SUNSET_TIME],
+            halfway_times=data[CONF_HALFWAY_TIMES],
             time_zone=self.hass.config.time_zone,
             transition=data[CONF_TRANSITION],
         )
@@ -824,6 +826,13 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             )
         ):
             return
+        if light in self.turn_on_off_listener.last_service_data:
+            if self.turn_on_off_listener.last_service_data[light] == service_data:
+                _LOGGER.debug(
+                    "_adapt_light: %s - no change detected, returning without calling light.turn_on",
+                    light
+                )
+                return
         self.turn_on_off_listener.last_service_data[light] = service_data
 
         async def turn_on(service_data):
@@ -1057,6 +1066,7 @@ class SunLightSettings:
     sunset_offset: Optional[datetime.timedelta]
     sunset_offset_color: Optional[datetime.timedelta]
     sunset_time: Optional[datetime.time]
+    halfway_times: bool
     time_zone: datetime.tzinfo
     transition: int
 
@@ -1074,28 +1084,43 @@ class SunLightSettings:
 
         location = self.astral_location
 
-        sunrise = (
-            location.sunrise(date, local=False)
-            if self.sunrise_time is None
-            else _replace_time(date, "sunrise")
-        ) + self.sunrise_offset
-        sunset = (
-            location.sunset(date, local=False)
-            if self.sunset_time is None
-            else _replace_time(date, "sunset")
-        ) + self.sunset_offset
+        sunrise_offset = self.sunrise_offset
+        sunset_offset = self.sunset_offset
 
         if color:
+            if self.sunrise_offset_color is not None:
+                sunrise_offset = self.sunrise_offset_color
+            if self.sunset_offset_color is not None:
+                sunset_offset = self.sunset_offset_color
+
             sunrise = (
                 location.sunrise(date, local=False)
                 if self.sunrise_time is None
                 else _replace_time(date, "sunrise")
-            ) + self.sunrise_offset_color
+        ) + sunrise_offset
             sunset = (
                 location.sunset(date, local=False)
                 if self.sunset_time is None
                 else _replace_time(date, "sunset")
-            ) + self.sunset_offset_color
+        ) + sunset_offset
+
+        if self.halfway_times:
+            if self.sunrise_time is not None:
+                local_sunrise = location.sunrise(date, local=False)
+                target_sunrise = _replace_time(date, "sunrise")
+                sunrise = (local_sunrise +
+                           (target_sunrise - local_sunrise) / 2) + sunrise_offset
+            if self.sunset_time is not None:
+                local_sunset = location.sunset(date, local=False)
+                target_sunset = _replace_time(date, "sunset")
+                sunset = local_sunset + \
+                    (target_sunset - local_sunset) / 2 + sunset_offset
+
+        if date.date() == datetime.datetime.today().date():
+            local_sunset = sunset.replace(
+                tzinfo=dt_util.UTC).astimezone(dt_util.DEFAULT_TIME_ZONE)
+            _LOGGER.debug(
+                f"Sunset calculations:\n - Color settings: {color}\n - Real sunset: {location.sunset(date, local=True)} \n - Calculated Sunset: {local_sunset}")
 
         if self.sunrise_time is None and self.sunset_time is None:
             try:
@@ -1395,6 +1420,9 @@ class TurnOnOffListener:
         or switch is turned 'off' and 'on' again.
         """
         if light not in self.last_state_change:
+            ## Lights were not consistently registered via state_changed_event_listener.
+            ## Adding last_state_change key with last state fixed this problem
+            self.last_state_change[light] = [self.hass.states.get(light)]
             return False
         old_states: List[State] = self.last_state_change[light]
         await self.hass.helpers.entity_component.async_update_entity(light)
@@ -1503,7 +1531,8 @@ class TurnOnOffListener:
             # Possibly because of polling.
             delay = TURNING_OFF_DELAY
 
-        delta_time = (dt_util.utcnow() - on_to_off_event.time_fired).total_seconds()
+        delta_time = (dt_util.utcnow() -
+                      on_to_off_event.time_fired).total_seconds()
         if delta_time > delay:
             return False
 
