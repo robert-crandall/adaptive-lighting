@@ -115,9 +115,11 @@ from .const import (
     CONF_SUNRISE_OFFSET,
     CONF_SUNRISE_OFFSET_COLOR,
     CONF_SUNRISE_TIME,
+    CONF_SUNRISE_TIME_COLOR,
     CONF_SUNSET_OFFSET,
     CONF_SUNSET_OFFSET_COLOR,
     CONF_SUNSET_TIME,
+    CONF_SUNSET_TIME_COLOR,
     CONF_TAKE_OVER_CONTROL,
     CONF_TRANSITION,
     CONF_TURN_ON_LIGHTS,
@@ -588,9 +590,11 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             sunrise_offset=data[CONF_SUNRISE_OFFSET],
             sunrise_offset_color=data[CONF_SUNRISE_OFFSET_COLOR],
             sunrise_time=data[CONF_SUNRISE_TIME],
+            sunrise_time_color=data[CONF_SUNRISE_TIME_COLOR],
             sunset_offset=data[CONF_SUNSET_OFFSET],
             sunset_offset_color=data[CONF_SUNSET_OFFSET_COLOR],
             sunset_time=data[CONF_SUNSET_TIME],
+            sunset_time_color=data[CONF_SUNSET_TIME_COLOR],
             time_zone=self.hass.config.time_zone,
             transition=data[CONF_TRANSITION],
         )
@@ -1061,9 +1065,11 @@ class SunLightSettings:
     sunrise_offset: Optional[datetime.timedelta]
     sunrise_offset_color: Optional[datetime.timedelta]
     sunrise_time: Optional[datetime.time]
+    sunrise_time_color: Optional[datetime.time]
     sunset_offset: Optional[datetime.timedelta]
     sunset_offset_color: Optional[datetime.timedelta]
     sunset_time: Optional[datetime.time]
+    sunset_time_color: Optional[datetime.time]
     time_zone: datetime.tzinfo
     transition: int
 
@@ -1079,34 +1085,43 @@ class SunLightSettings:
                 utc_time = date_time.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE).astimezone(dt_util.UTC)
             return utc_time
 
+        def _utc_time(date: datetime.datetime, time: datetime.time) -> datetime.datetime:
+            date_time = datetime.datetime.combine(date, time)
+            try:  # HA ≤2021.05, https://github.com/basnijholt/adaptive-lighting/issues/128
+                utc_time = self.time_zone.localize(date_time).astimezone(dt_util.UTC)
+            except AttributeError: # HA ≥2021.06
+                utc_time = date_time.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE).astimezone(dt_util.UTC)
+            return utc_time
+
         location = self.astral_location
 
-        sunrise = (
-            location.sunrise(date, local=False)
-            if self.sunrise_time is None
-            else _replace_time(date, "sunrise")
-        ) + self.sunrise_offset
-        sunset = (
-            location.sunset(date, local=False)
-            if self.sunset_time is None
-            else _replace_time(date, "sunset")
-        ) + self.sunset_offset
+        sunrise_offset = self.sunrise_offset
+        sunset_offset = self.sunset_offset
+        sunrise_time = self.sunset_time
+        sunset_time = self.sunrise_time
 
         if color:
             if self.sunrise_offset_color is not None:
-                sunrise = (
-                    location.sunrise(date, local=False)
-                    if self.sunrise_time is None
-                    else _replace_time(date, "sunrise")
-                ) + self.sunrise_offset_color
+                sunrise_offset = self.sunrise_offset_color
             if self.sunset_offset_color is not None:
-                sunset = (
-                    location.sunset(date, local=False)
-                    if self.sunset_time is None
-                    else _replace_time(date, "sunset")
-                ) + self.sunset_offset_color
+                sunset_offset = self.sunset_offset_color
+            if self.sunrise_time_color is not None:
+                sunrise_time = self.sunrise_time_color
+            if self.sunset_time_color is not None:
+                sunset_time = self.sunset_time_color
 
-        if self.sunrise_time is None and self.sunset_time is None:
+        sunrise = (
+            location.sunrise(date, local=False)
+            if sunrise_time is None
+            else _utc_time(date, sunrise_time)
+        ) + sunrise_offset
+        sunset = (
+            location.sunset(date, local=False)
+            if sunset_time is None
+            else _utc_time(date, sunset_time)
+        ) + sunset_offset
+
+        if sunrise_time is None and sunset_time is None:
             try:
                 # Astral v1
                 solar_noon = location.solar_noon(date, local=False)
