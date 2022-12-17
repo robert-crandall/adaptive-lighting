@@ -1205,6 +1205,10 @@ class SunLightSettings:
         i_now = bisect.bisect([ts for _, ts in events], now.timestamp())
         return events[i_now - 1 : i_now + 1]
 
+    # This returns percent of sun in position of sky:
+    # -100% = midnight
+    # 0% = sun is at horizon
+    # 100% = sun is at zenith
     def calc_percent(self, transition: int) -> float:
         """Calculate the position of the sun in %."""
         now = dt_util.utcnow()
@@ -1222,16 +1226,19 @@ class SunLightSettings:
         percentage = (0 - k) * ((target_ts - h) / (h - x)) ** 2 + k
         return percentage
 
+    # This returns 100% after sun is bright enough (halfway between horizon and zenith), staggers up until that point
     def calc_brightness_pct(self, percent: float, is_sleep: bool) -> float:
         """Calculate the brightness in %."""
         if is_sleep:
             return self.sleep_brightness
-        if percent > 0:
+        if percent > 0.5:
             return self.max_brightness
         delta_brightness = self.max_brightness - self.min_brightness
-        percent = 1 + percent
+        # Convert percent to 0-1
+        percent = self._range_to_percent(percent, -1, 0.5)
         return (delta_brightness * percent) + self.min_brightness
 
+    # This returns min temperature until sunrise is hit, then staggers up accordingly
     def calc_color_temp_kelvin(self, percent: float) -> int:
         """Calculate the color temperature in Kelvin."""
         if percent > 0:
@@ -1239,6 +1246,10 @@ class SunLightSettings:
             ct = (delta * percent) + self.min_color_temp
             return 5 * round(ct / 5)  # round to nearest 5
         return self.min_color_temp
+
+    def _range_to_percent(self, value: float, start: float, end: float) -> float:
+        """Calculate the percentage of a value in a range."""
+        return (value - start) / (end - start)
 
     def get_settings(
         self, is_sleep, transition
