@@ -1227,6 +1227,7 @@ class SunLightSettings:
         return percentage
 
     # This returns 100% after sun is bright enough (halfway between horizon and zenith), staggers up until that point
+    # As in, once the event is hit, the lights are as bright as they'll be
     def calc_brightness_pct(self, percent: float, is_sleep: bool) -> float:
         """Calculate the brightness in %."""
         if is_sleep:
@@ -1239,13 +1240,23 @@ class SunLightSettings:
         return (delta_brightness * percent) + self.min_brightness
 
     # This returns min temperature until sunrise is hit, then staggers up accordingly
+    # As in, once sunset hits, the lights are as warm as they'll be
     def calc_color_temp_kelvin(self, percent: float) -> int:
         """Calculate the color temperature in Kelvin."""
-        if percent > 0:
-            delta = self.max_color_temp - self.min_color_temp
-            ct = (delta * percent) + self.min_color_temp
-            return 5 * round(ct / 5)  # round to nearest 5
-        return self.min_color_temp
+        # It is halfway between sunrise and noon, or noon and sunset
+        # Return the max color temp
+        if percent > 0.5:
+            return self.max_color_temp
+        # It is halfway between sunset and midnight, or midnight and sunrise
+        # Return the min color temp
+        if percent < -0.5:
+            return self.min_color_temp
+
+        # Calculate a staggered color temp
+        delta = self.max_color_temp - self.min_color_temp
+        percent = self._range_to_percent(percent, -0.5, 0.5)
+        ct = (delta * percent) + self.min_color_temp
+        return 5 * round(ct / 5)  # round to nearest 5
 
     def _range_to_percent(self, value: float, start: float, end: float) -> float:
         """Calculate the percentage of a value in a range."""
