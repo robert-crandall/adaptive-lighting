@@ -1243,10 +1243,6 @@ class SunLightSettings:
     # As in, once sunset hits, the lights are as warm as they'll be
     def calc_color_temp_kelvin(self, percent: float) -> int:
         """Calculate the color temperature in Kelvin."""
-        # It is halfway between sunrise and noon, or noon and sunset
-        # Return the max color temp
-        if percent > 0.5:
-            return self.max_color_temp
         # It is halfway between sunset and midnight, or midnight and sunrise
         # Return the min color temp
         if percent < -0.5:
@@ -1254,7 +1250,7 @@ class SunLightSettings:
 
         # Calculate a staggered color temp
         delta = self.max_color_temp - self.min_color_temp
-        percent = self._range_to_percent(percent, -0.5, 0.5)
+        percent = self._range_to_percent(percent, -0.5, 1)
         ct = (delta * percent) + self.min_color_temp
         return 5 * round(ct / 5)  # round to nearest 5
 
