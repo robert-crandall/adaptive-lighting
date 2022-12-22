@@ -1234,10 +1234,9 @@ class SunLightSettings:
             return self.sleep_brightness
         if percent > 0.5:
             return self.max_brightness
-        delta_brightness = self.max_brightness - self.min_brightness
         # Convert percent to 0-1
         percent = self._range_to_percent(percent, -1, 0.5)
-        return (delta_brightness * percent) + self.min_brightness
+        return max(self.max_brightness * percent, self.min_brightness)
 
     # This returns min temperature until sunrise is hit, then staggers up accordingly
     # As in, once sunset hits, the lights are as warm as they'll be
