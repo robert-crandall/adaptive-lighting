@@ -1103,10 +1103,12 @@ class SunLightSettings:
     sleep_rgb_color: tuple[int, int, int]
     sunrise_offset: datetime.timedelta | None
     sunrise_time: datetime.time | None
+    min_sunrise_time: datetime.time | None
     max_sunrise_time: datetime.time | None
     sunset_offset: datetime.timedelta | None
     sunset_time: datetime.time | None
     min_sunset_time: datetime.time | None
+    max_sunset_time: datetime.time | None
     time_zone: datetime.tzinfo
     transition: int
 
@@ -1151,6 +1153,11 @@ class SunLightSettings:
             else _replace_time(date, "sunset")
         ) + self.sunset_offset
 
+        if self.min_sunrise_time is not None:
+            min_sunrise = _replace_time(date, "min_sunrise")
+            if min_sunrise > sunrise:
+                sunrise = min_sunrise
+
         if self.max_sunrise_time is not None:
             max_sunrise = _replace_time(date, "max_sunrise")
             if max_sunrise < sunrise:
@@ -1160,6 +1167,11 @@ class SunLightSettings:
             min_sunset = _replace_time(date, "min_sunset")
             if min_sunset > sunset:
                 sunset = min_sunset
+
+        if self.max_sunset_time is not None:
+            max_sunset = _replace_time(date, "max_sunset")
+            if max_sunset < sunset:
+                sunset = max_sunset
 
         if (
             self.sunrise_time is None
