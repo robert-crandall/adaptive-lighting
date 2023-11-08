@@ -39,10 +39,12 @@ CONF_SLEEP_RGB_OR_COLOR_TEMP, DEFAULT_SLEEP_RGB_OR_COLOR_TEMP = (
 )
 CONF_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET = "sunrise_offset", 0
 CONF_SUNRISE_TIME = "sunrise_time"
+CONF_MIN_SUNRISE_TIME = "min_sunrise_time"
 CONF_MAX_SUNRISE_TIME = "max_sunrise_time"
 CONF_SUNSET_OFFSET, DEFAULT_SUNSET_OFFSET = "sunset_offset", 0
 CONF_SUNSET_TIME = "sunset_time"
 CONF_MIN_SUNSET_TIME = "min_sunset_time"
+CONF_MAX_SUNSET_TIME = "max_sunset_time"
 CONF_TAKE_OVER_CONTROL, DEFAULT_TAKE_OVER_CONTROL = "take_over_control", True
 CONF_TRANSITION, DEFAULT_TRANSITION = "transition", 45
 
@@ -100,10 +102,12 @@ VALIDATION_TUPLES = [
         selector.ColorRGBSelector(selector.ColorRGBSelectorConfig()),
     ),
     (CONF_SUNRISE_TIME, NONE_STR, str),
+    (CONF_MIN_SUNRISE_TIME, NONE_STR, str)
     (CONF_MAX_SUNRISE_TIME, NONE_STR, str),
     (CONF_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET, int),
     (CONF_SUNSET_TIME, NONE_STR, str),
     (CONF_MIN_SUNSET_TIME, NONE_STR, str),
+    (CONF_MAX_SUNSET_TIME, NONE_STR, str),
     (CONF_SUNSET_OFFSET, DEFAULT_SUNSET_OFFSET, int),
     (CONF_ONLY_ONCE, DEFAULT_ONLY_ONCE, bool),
     (CONF_TAKE_OVER_CONTROL, DEFAULT_TAKE_OVER_CONTROL, bool),
@@ -128,10 +132,12 @@ EXTRA_VALIDATION = {
     CONF_INTERVAL: (cv.time_period, timedelta_as_int),
     CONF_SUNRISE_OFFSET: (cv.time_period, timedelta_as_int),
     CONF_SUNRISE_TIME: (cv.time, str),
+    CONF_MIN_SUNRISE_TIME: (cv.time, str),
     CONF_MAX_SUNRISE_TIME: (cv.time, str),
     CONF_SUNSET_OFFSET: (cv.time_period, timedelta_as_int),
     CONF_SUNSET_TIME: (cv.time, str),
     CONF_MIN_SUNSET_TIME: (cv.time, str),
+    CONF_MAX_SUNSET_TIME: (cv.time, str),
 }
 
 
