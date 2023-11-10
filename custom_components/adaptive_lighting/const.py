@@ -102,7 +102,7 @@ VALIDATION_TUPLES = [
         selector.ColorRGBSelector(selector.ColorRGBSelectorConfig()),
     ),
     (CONF_SUNRISE_TIME, NONE_STR, str),
-    (CONF_MIN_SUNRISE_TIME, NONE_STR, str)
+    (CONF_MIN_SUNRISE_TIME, NONE_STR, str),
     (CONF_MAX_SUNRISE_TIME, NONE_STR, str),
     (CONF_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET, int),
     (CONF_SUNSET_TIME, NONE_STR, str),
